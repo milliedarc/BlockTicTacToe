@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import {ref, computed} from "vue";
 
-const board = ref<string[]>(['', '', '', '', '', '', '', '', ''])
+const board = ref<Tile[]>([{}, {}, {}, {}, {}, {}, {}, {}, {}])
 const currentPlayer = ref<'playerOne' | 'playerTwo'>('playerOne');
+const winner = ref<Player | 'draw' | null>(null);
+const winPattern = ref<number[]>([])
 
 interface Player {
   style: string;
   displayName: string
+}
+
+interface Tile {
+  colour?: string | undefined;
+  player?: Player | undefined;
 }
 
 const players: Record<'playerOne' | 'playerTwo', Player> = {
@@ -20,38 +27,53 @@ const players: Record<'playerOne' | 'playerTwo', Player> = {
   }
 }
 
-const winner = computed((): 'playerOne' | 'playerTwo' | 'draw' | null => {
+function handleWinner(): Player | 'draw' | null {
   const winPatterns = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8], // horizonal
     [0, 3, 6], [1, 4, 7], [2, 5, 8], // vertical
     [0, 4, 8], [2, 4, 6] // diagonal
   ];
-
   for (const pattern of winPatterns) { // winner check
     const [a, b, c] = pattern;
-    if (board.value[a] && board.value[a] === board.value[b] && board.value[a] === board.value[c]) {
-      const winner = board.value[a] as 'playerOne' | 'playerTwo';
+    if (board.value[a].player && board.value[a].player === board.value[b].player && board.value[a].player === board.value[c].player) {
+      const winner = board.value[a].player;
+      winPattern.value = pattern;
+
       console.log('winner is' + winner);
-      return winner
+
+      return winner;
     }
   }
-  if (board.value.every(tile => tile !== '')) { //checking that the game hasn't ended yet!
+  if (board.value.every(tile => tile.player !== undefined)) { //checking that the game hasn't ended yet!
     console.log('draw');
     return 'draw';
   }
   return null;
-})
+}
 
 function makeMove(i: number): void {
-  if (board.value[i] === '' && !winner.value) {
-    board.value[i] = currentPlayer.value;
-    currentPlayer.value = currentPlayer.value === 'playerOne' ? 'playerTwo' : 'playerOne';
+  if (winner.value) {
+    return;
   }
+  if (board.value[i].player) {
+    return;
+  }
+
+  board.value[i].player = players[currentPlayer.value];
+  board.value[i].colour = players[currentPlayer.value].style
+  currentPlayer.value = currentPlayer.value === 'playerOne' ? 'playerTwo' : 'playerOne';
+
+  winner.value = handleWinner();
+}
+
+function changeWinTileColour(): void {
+
 }
 
 function resetGame(): void {
-  board.value = ['', '', '', '', '', '', '', '', ''];
+  board.value = [{}, {}, {}, {}, {}, {}, {}, {}, {}]
   currentPlayer.value = 'playerOne';
+  winner.value = null;
 }
 
 </script>
@@ -69,8 +91,8 @@ function resetGame(): void {
           <h5>It's a draw!</h5>
         </div>
         <div v-else>
-          <span id="winner-text" :style="players[winner].style + 'color: whitesmoke;'">
-            {{ players[winner].displayName }} has won!
+          <span id="winner-text" :style="winner.style + 'color: whitesmoke;'">
+            {{ winner.displayName }} has won!
           </span>
         </div>
       </section>
@@ -79,7 +101,7 @@ function resetGame(): void {
           <div class="tile"
                v-for="i in [0, 1, 2, 3, 4, 5, 6, 7, 8]"
                @click="makeMove(i)"
-               :style="board[i] ? players[board[i] as 'playerOne' | 'playerTwo'].style : ''">
+               :style="board[i].colour">
             {{ i + 1 }}
           </div>
         </div>
