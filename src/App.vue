@@ -5,35 +5,38 @@ const board = ref<string[]>(['', '', '', '', '', '', '', '', ''])
 const currentPlayer = ref<'playerOne' | 'playerTwo'>('playerOne');
 
 interface Player {
-  colour: string;
-  display: string
+  style: string;
+  displayName: string
 }
 
 const players: Record<'playerOne' | 'playerTwo', Player> = {
   playerOne: {
-    colour: 'background-color: #415e83;',
-    display: 'Player 1'
+    style: 'background-color: #415e83;',
+    displayName: 'Player 1'
   },
   playerTwo: {
-    colour: 'background-color: #7aa5dc;',
-    display: 'Player 2'
+    style: 'background-color: #7aa5dc;',
+    displayName: 'Player 2'
   }
 }
 
 const winner = computed((): 'playerOne' | 'playerTwo' | 'draw' | null => {
   const winPatterns = [
-    [0, 1, 2], [3, 4, 5], [6, 7, 8],
-    [0, 3, 6], [1, 4, 7], [2, 5, 8],
-    [0, 4, 8], [2, 4, 6]
+    [0, 1, 2], [3, 4, 5], [6, 7, 8], // horizonal
+    [0, 3, 6], [1, 4, 7], [2, 5, 8], // vertical
+    [0, 4, 8], [2, 4, 6] // diagonal
   ];
 
-  for (const pattern of winPatterns) {
+  for (const pattern of winPatterns) { // winner check
     const [a, b, c] = pattern;
     if (board.value[a] && board.value[a] === board.value[b] && board.value[a] === board.value[c]) {
-      return board.value[a] as 'playerOne' | 'playerTwo';
+      const winner = board.value[a] as 'playerOne' | 'playerTwo';
+      console.log('winner is' + winner);
+      return winner
     }
   }
-  if (board.value.every(tile => tile !== '')) {
+  if (board.value.every(tile => tile !== '')) { //checking that the game hasn't ended yet!
+    console.log('draw');
     return 'draw';
   }
   return null;
@@ -54,68 +57,121 @@ function resetGame(): void {
 </script>
 
 <template>
-  <section class="text-section">
-    <h4>Click on the tiles to play.</h4>
-    <div v-if="!winner">
-      <h5 class="current-player"
-          :style="players[currentPlayer].colour">Current player: {{ players[currentPlayer].display }}</h5>
+  <div class="app-wrapper">
+    <div class="game-container">
+      <section class="text-section">
+        <h4>Click on the tiles to play.</h4>
+        <div v-if="!winner">
+          <h5 class="current-player"
+              :style="players[currentPlayer].style">Current player: {{ players[currentPlayer].displayName }}</h5>
+        </div>
+        <div v-else-if="winner === 'draw'">
+          <h5>It's a draw!</h5>
+        </div>
+        <div v-else>
+          <span id="winner-text" :style="players[winner].style + 'color: whitesmoke;'">
+            {{ players[winner].displayName }} has won!
+          </span>
+        </div>
+      </section>
+      <section class="board">
+        <div class="grid">
+          <div class="tile"
+               v-for="i in [0, 1, 2, 3, 4, 5, 6, 7, 8]"
+               @click="makeMove(i)"
+               :style="board[i] ? players[board[i] as 'playerOne' | 'playerTwo'].style : ''">
+            {{ i + 1 }}
+          </div>
+        </div>
+      </section>
+      <section class="button-section">
+        <button @click="resetGame">Reset game</button>
+      </section>
     </div>
-    <div v-else-if="winner === 'draw'">
-      <h5>It's a draw!</h5>
-    </div>
-    <div v-else>
-    <span :style="players[winner].colour">
-      {{ players[winner].display }} has won!
-    </span>
-    </div>
-  </section>
-  <section class="board">
-    <div class="grid">
-      <div class="tile"
-           v-for="i in [0, 1, 2, 3, 4, 5, 6, 7, 8]"
-           @click="makeMove(i)"
-           :style="board[i] ? players[board[i] as 'playerOne' | 'playerTwo'].colour : ''">
-        {{ i + 1 }}
-      </div>
-    </div>
-  </section>
-  <section class="button-section">
-    <button @click="resetGame">Reset game</button>
-  </section>
+  </div>
 </template>
 
 <style scoped>
 * {
   font-family: 'Nunito', sans-serif;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.app-wrapper {
+  background-color: #f0f2f5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.game-container {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  max-width: 450px;
+  width: 90%;
+  padding: 30px;
 }
 
 .current-player {
   padding: 4px 8px;
   border-radius: 4px;
-  color: #ffffff;
+  color: whitesmoke;
 }
 
-.text-section,
-.board {
+.text-section {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  text-align: center;
+}
+
+#winner-text {
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: whitesmoke;
+  font-weight: bold;
+}
+
+.board {
+  display: flex;
+  justify-content: center;
   align-items: center;
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  border: 2px solid black;
+  border: 4px solid #333;
+  border-radius: 8px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 1 / 1;
 }
 
 .tile {
-  padding: 50px;
+  font-weight: bold;
+  width: 100%;
+  min-height: 120px;
   display: flex;
   justify-content: center;
   align-items: center;
-  border-right: 2px solid black;
-  border-bottom: 2px solid black;
+  border-right: 2px solid #555;
+  border-bottom: 2px solid #555;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.3s ease, transform 0.1s ease;
 }
+
+/* to fix superposed borders */
 
 .tile:nth-child(3n) {
   border-right: none;
@@ -125,22 +181,36 @@ function resetGame(): void {
   border-bottom: none;
 }
 
+.tile:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
 .button-section {
   display: flex;
   justify-content: center;
-  padding: 50px;
+  padding-top: 10px;
 }
 
 button {
-  border-radius: 4px;
-  font-size: 16px;
+  padding: 12px 25px;
+  border-radius: 8px;
+  font-size: 1.1em;
+  font-weight: bold;
   cursor: pointer;
-  background-color: #353232;
-  color: whitesmoke;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  transition: background-color 0.3s ease, transform 0.1s ease, box-shadow 0.3s ease;
 }
 
 button:hover {
-  background-color: white;
-  color: black;
+  background-color: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 </style>
