@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import {ref, computed} from "vue";
+import {ref} from "vue";
 
 const board = ref<Tile[]>([{}, {}, {}, {}, {}, {}, {}, {}, {}])
 const currentPlayer = ref<'playerOne' | 'playerTwo'>('playerOne');
 const winner = ref<Player | 'draw' | null>(null);
-const winPattern = ref<number[]>([])
 
 interface Player {
   style: string;
@@ -12,7 +11,7 @@ interface Player {
 }
 
 interface Tile {
-  colour?: string | undefined;
+  style?: string | undefined;
   player?: Player | undefined;
 }
 
@@ -35,9 +34,21 @@ function handleWinner(): Player | 'draw' | null {
   ];
   for (const pattern of winPatterns) { // winner check
     const [a, b, c] = pattern;
-    if (board.value[a].player && board.value[a].player === board.value[b].player && board.value[a].player === board.value[c].player) {
+    if (board.value[a].player &&
+        board.value[a].player === board.value[b].player &&
+        board.value[a].player === board.value[c].player) {
       const winner = board.value[a].player;
-      winPattern.value = pattern;
+
+      pattern.forEach(i => {
+        board.value[i].style = 'background-color: #6f9e60;'
+      })
+
+      //@ts-ignore
+      window.confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: {y: 0.6},
+      });
 
       console.log('winner is' + winner);
 
@@ -60,14 +71,10 @@ function makeMove(i: number): void {
   }
 
   board.value[i].player = players[currentPlayer.value];
-  board.value[i].colour = players[currentPlayer.value].style
+  board.value[i].style = players[currentPlayer.value].style
   currentPlayer.value = currentPlayer.value === 'playerOne' ? 'playerTwo' : 'playerOne';
 
   winner.value = handleWinner();
-}
-
-function changeWinTileColour(): void {
-
 }
 
 function resetGame(): void {
@@ -101,7 +108,7 @@ function resetGame(): void {
           <div class="tile"
                v-for="i in [0, 1, 2, 3, 4, 5, 6, 7, 8]"
                @click="makeMove(i)"
-               :style="board[i].colour">
+               :style="board[i].style">
             {{ i + 1 }}
           </div>
         </div>
